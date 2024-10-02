@@ -22,6 +22,11 @@ else:
 
 
 # Constants
+top_level_width = 218
+top_level_height = 39
+
+hot_level_width = 200
+hot_level_height = 3.5
 
 
 def validate():
