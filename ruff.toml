@@ -1,0 +1,17 @@
+target-version = "py311"
+
+line-length = 79
+
+[lint]
+# select = []
+ignore = [
+    
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
