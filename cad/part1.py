@@ -41,6 +41,8 @@ bolt_hole_signs = list(itertools.product([1, -1, 1.8, -1.8], [1, -1]))
 # Pouring hole.
 pouring_hole_diameter = 28
 
+top_filament_saver_box = (125, 125, 100)
+bottom_filament_saver_box = (170, 192, 100)
 
 # region Calculated dimensions
 total_cast_outside_length = (2 * silicone_vertical_wall_t) + max(
@@ -190,7 +192,10 @@ def make_silicone_mold_outer() -> bd.Part:
     )
 
     # Remove a big filament saver hole.
-    p -= bd.Box(125, 125, 100)
+    p -= bd.Box(*[dim - 8 for dim in top_filament_saver_box])
+    p -= bd.Box(
+        *[dim - 8 for dim in bottom_filament_saver_box], align=bde.align.TOP
+    )
 
     # Add the standoffs.
     # Remove the bolt holes.
@@ -261,10 +266,10 @@ def make_silicone_mold_inner() -> bd.Part:
         )
 
     # Remove filament saver hole (which also provides nut access).
-    p -= bd.Box(125, 125, 100)
+    p -= bd.Box(*top_filament_saver_box)
 
     # Remove more aggressive filament saver hole.
-    p -= bd.Box(170, 192, 100, align=bde.align.TOP).translate(
+    p -= bd.Box(*bottom_filament_saver_box, align=bde.align.TOP).translate(
         (
             0,
             0,
@@ -278,6 +283,19 @@ def make_silicone_mold_inner() -> bd.Part:
     return p
 
 
+def make_mold_assembly() -> bd.Part:
+    """Makes an assembly of the silicone mold inner and outer parts."""
+
+    p = bd.Part()
+
+    p += make_silicone_mold_outer()
+
+    # Scale is mostly so we can clearly see the separation.
+    p += make_silicone_mold_inner().scale(0.995)
+
+    return p
+
+
 if __name__ == "__main__":
     validate()
 
@@ -285,7 +303,8 @@ if __name__ == "__main__":
         "plate_model": (make_plate_model()),
         "silicone_cast_positive": (make_silicone_cast_positive()),
         "silicone_mold_outer": (make_silicone_mold_outer()),
-        "silicone_mold_inner": show(make_silicone_mold_inner()),
+        "silicone_mold_inner": (make_silicone_mold_inner()),
+        "mold_assembly": show(make_mold_assembly()),
     }
 
     logger.info("Showing CAD model(s)")
