@@ -28,7 +28,7 @@ silicone_dist_on_bottom_radius = 15
 silicone_box_outer_radius = 2
 
 # Thicknesses of Molds.
-mold_general_t = 3
+mold_general_t = 1.8
 
 # Bolt specs.
 bolt_diameter = 3.2
