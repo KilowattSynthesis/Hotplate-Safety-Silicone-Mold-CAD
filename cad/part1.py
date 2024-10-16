@@ -28,29 +28,54 @@ top_level_height = 39
 hot_level_width = 200
 hot_level_height = 3.5
 
+# Thicknesses of Silicone parts.
+silicone_vertical_wall_t = 2  # Thickness in X/Y.
+silicone_horizontal_wall_t = 3  # Thickness in Z, on top of plate.
+
+# Other silicone dimensions.
+silicone_dist_on_top = 10
+silicone_dist_on_bottom = 5
+
+# Thicknesses of Molds.
+mold_general_t = 3
+
 
 def validate():
     """Raise if variables are not valid."""
     pass
 
 
-def make_part1():
-    # Orientation: ...
-    with bd.BuildPart() as part1:
-        bd.Cylinder(radius=20, height=20)
+def make_plate_model() -> bd.Part:
+    p = bd.Part()
 
-    return part1.part
+    # Stack it up from the bottom.
+    # Wide base plate.
+    p += bd.Box(
+        top_level_width,
+        top_level_width,
+        top_level_height,
+        align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.MAX),
+    )
+
+    # Hot part
+    p += bd.Box(
+        hot_level_width,
+        hot_level_width,
+        hot_level_height,
+        align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.MIN),
+    )
+
+    return p
 
 
 if __name__ == "__main__":
     validate()
 
     parts = {
-        "part1": make_part1(),
+        "plate_model": show(make_plate_model()),
     }
 
     logger.info("Showing CAD model(s)")
-    show(parts["part1"])
 
     (export_folder := Path(__file__).parent.with_name("build")).mkdir(
         exist_ok=True
