@@ -33,8 +33,10 @@ silicone_vertical_wall_t = 2  # Thickness in X/Y.
 silicone_horizontal_wall_t = 3  # Thickness in Z, on top of plate.
 
 # Other silicone dimensions.
-silicone_dist_on_top = 10
-silicone_dist_on_bottom = 5
+silicone_dist_on_top = 25
+silicone_dist_on_bottom = 10
+silicone_dist_on_top_radius = 5
+silicone_dist_on_bottom_radius = 25
 
 # Thicknesses of Molds.
 mold_general_t = 3
@@ -46,6 +48,7 @@ def validate():
 
 
 def make_plate_model() -> bd.Part:
+    """A model of the literal hot plate."""
     p = bd.Part()
 
     # Stack it up from the bottom.
@@ -68,11 +71,79 @@ def make_plate_model() -> bd.Part:
     return p
 
 
+def make_silicone_cast_positive() -> bd.Part:
+    """Create the silicone cast positive."""
+
+    total_mold_outside_length = (
+        (2 * mold_general_t)
+        + (2 * silicone_vertical_wall_t)
+        + max(hot_level_width, top_level_width)
+    )
+    total_mold_outside_height = (
+        (2 * mold_general_t)
+        + (2 * silicone_horizontal_wall_t)
+        + (hot_level_height + top_level_height)
+    )
+
+    p = bd.Part()
+
+    p += bd.Box(
+        total_mold_outside_length,
+        total_mold_outside_length,
+        total_mold_outside_height,
+    )
+
+    # Remove the actual hot plate.
+    plate_model = make_plate_model()
+    p -= plate_model.translate(
+        (0, 0, -plate_model.center().Z),
+    )
+
+    # Remove top-side box to access the hotplate.
+    p -= (
+        top_box := bd.Part()
+        + bd.Box(
+            hot_level_width - 2 * silicone_dist_on_top,
+            hot_level_width - 2 * silicone_dist_on_top,
+            100,
+            align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.MIN),
+        )
+    ).fillet(
+        radius=silicone_dist_on_top_radius,
+        edge_list=top_box.edges().filter_by(bd.Axis.Z),
+    )
+
+    # Remove bottom-side clearance.
+    p -= (
+        bottom_box := bd.Part()
+        + bd.Box(
+            top_level_width - 2 * silicone_dist_on_bottom,
+            top_level_width - 2 * silicone_dist_on_bottom,
+            100,
+            align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.MAX),
+        )
+    ).fillet(
+        radius=silicone_dist_on_bottom_radius,
+        edge_list=bottom_box.edges().filter_by(bd.Axis.Z),
+    )
+
+    # Keep only the positive X side.
+    p = p & bd.Box(
+        1000,
+        1000,
+        1000,
+        align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER),
+    )
+
+    return p
+
+
 if __name__ == "__main__":
     validate()
 
     parts = {
-        "plate_model": show(make_plate_model()),
+        "plate_model": (make_plate_model()),
+        "silicone_cast_positive": show(make_silicone_cast_positive()),
     }
 
     logger.info("Showing CAD model(s)")
