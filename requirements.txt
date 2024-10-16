@@ -3,3 +3,5 @@ ocp_vscode
 git+https://github.com/gumyr/bd_warehouse
 
 loguru
+
+git+https://github.com/KilowattSynthesis/build123d_ease
