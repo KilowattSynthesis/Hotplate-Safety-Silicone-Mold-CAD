@@ -36,6 +36,7 @@ bolt_sep_y = 100
 bolt_sep_z = 20
 bolt_standoff_od = 7
 bolt_standoff_length = silicone_vertical_wall_t
+bolt_hole_signs = list(itertools.product([1, -1, 1.8, -1.8], [1, -1]))
 
 # Pouring hole.
 pouring_hole_diameter = 28
@@ -176,7 +177,7 @@ def make_silicone_mold_outer() -> bd.Part:
         (
             0,
             0,
-            cast.bounding_box().center().Z,  # + mold_general_t,
+            cast.bounding_box().center().Z,
         )
     )
 
@@ -193,7 +194,7 @@ def make_silicone_mold_outer() -> bd.Part:
 
     # Add the standoffs.
     # Remove the bolt holes.
-    for y_sign, z_sign in itertools.product([1, -1, 1.8, -1.8], [1, -1]):
+    for y_sign, z_sign in bolt_hole_signs:
         # Standoff.
         p += bd.Cylinder(
             radius=bolt_standoff_od / 2,
@@ -235,13 +236,56 @@ def make_silicone_mold_outer() -> bd.Part:
     return p
 
 
+def make_silicone_mold_inner() -> bd.Part:
+    """Make the inner portion of the silicone mold."""
+
+    p = bd.Part()
+
+    p += _make_silicone_cast_positive_outline()
+
+    p -= make_silicone_cast_positive()
+
+    # Remove the bolt holes.
+    for y_sign, z_sign in bolt_hole_signs:
+        # Bolt holes.
+        p -= bd.Cylinder(
+            radius=bolt_diameter / 2,
+            height=1000,
+            rotation=bde.rotation.POS_X,
+        ).translate(
+            (
+                0,
+                y_sign * bolt_sep_y / 2,
+                z_sign * bolt_sep_z / 2,
+            ),
+        )
+
+    # Remove filament saver hole (which also provides nut access).
+    p -= bd.Box(125, 125, 100)
+
+    # Remove more aggressive filament saver hole.
+    p -= bd.Box(170, 192, 100, align=bde.align.TOP).translate(
+        (
+            0,
+            0,
+            p.faces().sort_by(bd.Axis.Z)[-1].center().Z
+            - hot_level_height
+            - silicone_horizontal_wall_t
+            - mold_general_t,
+        )
+    )
+
+    return p
+
+
 if __name__ == "__main__":
     validate()
 
     parts = {
         "plate_model": (make_plate_model()),
         "silicone_cast_positive": (make_silicone_cast_positive()),
-        "silicone_mold_outer": show(make_silicone_mold_outer()),
+        "silicone_mold_outer": (make_silicone_mold_outer()),
+        "silicone_mold_inner": show(make_silicone_mold_inner()),
     }
 
     logger.info("Showing CAD model(s)")
