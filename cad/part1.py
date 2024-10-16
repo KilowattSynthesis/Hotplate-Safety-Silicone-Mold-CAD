@@ -29,14 +29,15 @@ hot_level_width = 200
 hot_level_height = 3.5
 
 # Thicknesses of Silicone parts.
-silicone_vertical_wall_t = 2  # Thickness in X/Y.
+silicone_vertical_wall_t = 3.5  # Thickness in X/Y.
 silicone_horizontal_wall_t = 3  # Thickness in Z, on top of plate.
 
 # Other silicone dimensions.
 silicone_dist_on_top = 25
 silicone_dist_on_bottom = 10
 silicone_dist_on_top_radius = 5
-silicone_dist_on_bottom_radius = 25
+silicone_dist_on_bottom_radius = 15
+silicone_box_outer_radius = 2
 
 # Thicknesses of Molds.
 mold_general_t = 3
@@ -74,15 +75,11 @@ def make_plate_model() -> bd.Part:
 def make_silicone_cast_positive() -> bd.Part:
     """Create the silicone cast positive."""
 
-    total_mold_outside_length = (
-        (2 * mold_general_t)
-        + (2 * silicone_vertical_wall_t)
-        + max(hot_level_width, top_level_width)
+    total_mold_outside_length = (2 * silicone_vertical_wall_t) + max(
+        hot_level_width, top_level_width
     )
-    total_mold_outside_height = (
-        (2 * mold_general_t)
-        + (2 * silicone_horizontal_wall_t)
-        + (hot_level_height + top_level_height)
+    total_mold_outside_height = (2 * silicone_horizontal_wall_t) + (
+        hot_level_height + top_level_height
     )
 
     p = bd.Part()
@@ -92,6 +89,9 @@ def make_silicone_cast_positive() -> bd.Part:
         total_mold_outside_length,
         total_mold_outside_height,
     )
+
+    # Fillet the outside of the mold.
+    p = p.fillet(radius=silicone_box_outer_radius, edge_list=p.edges())
 
     # Remove the actual hot plate.
     plate_model = make_plate_model()
@@ -128,12 +128,16 @@ def make_silicone_cast_positive() -> bd.Part:
     )
 
     # Keep only the positive X side.
-    p = p & bd.Box(
-        1000,
-        1000,
-        1000,
-        align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER),
-    )
+    if 0:
+        p = p & bd.Box(
+            1000,
+            1000,
+            1000,
+            align=(bd.Align.MIN, bd.Align.CENTER, bd.Align.CENTER),
+        )
+
+    # TODO: Add a test rendering of the bar that hold the plate, to ensure the
+    # fillets are set well.
 
     return p
 
