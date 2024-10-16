@@ -1,4 +1,5 @@
 import itertools
+from typing import Literal
 from pathlib import Path
 
 import build123d as bd
@@ -32,11 +33,9 @@ mold_general_t = 1.8
 
 # Bolt specs.
 bolt_diameter = 3.2
-bolt_sep_y = 100
-bolt_sep_z = 20
 bolt_standoff_od = 7
 bolt_standoff_length = silicone_vertical_wall_t
-bolt_hole_signs = list(itertools.product([1, -1, 1.8, -1.8], [1, -1]))
+bolt_hole_signs = list(itertools.product([20, 85, -20, -85], [10, -10]))
 
 # Pouring hole.
 pouring_hole_diameter = 28
@@ -199,7 +198,7 @@ def make_silicone_mold_outer() -> bd.Part:
 
     # Add the standoffs.
     # Remove the bolt holes.
-    for y_sign, z_sign in bolt_hole_signs:
+    for y_pos, z_pos in bolt_hole_signs:
         # Standoff.
         p += bd.Cylinder(
             radius=bolt_standoff_od / 2,
@@ -210,8 +209,8 @@ def make_silicone_mold_outer() -> bd.Part:
             (
                 # X: To the inside of the wall.
                 total_cast_outside_length / 2,
-                y_sign * bolt_sep_y / 2,
-                z_sign * bolt_sep_z / 2,
+                y_pos,
+                z_pos,
             ),
         )
 
@@ -222,11 +221,7 @@ def make_silicone_mold_outer() -> bd.Part:
             rotation=bde.rotation.POS_X,
             align=bde.align.BOTTOM,  # Make it "normal" for rotation.
         ).translate(
-            (
-                0,
-                y_sign * bolt_sep_y / 2,
-                z_sign * bolt_sep_z / 2,
-            ),
+            (0, y_pos, z_pos),
         )
 
     # Keep only the positive X side.
@@ -251,18 +246,14 @@ def make_silicone_mold_inner() -> bd.Part:
     p -= make_silicone_cast_positive()
 
     # Remove the bolt holes.
-    for y_sign, z_sign in bolt_hole_signs:
+    for y_pos, z_pos in bolt_hole_signs:
         # Bolt holes.
         p -= bd.Cylinder(
             radius=bolt_diameter / 2,
             height=1000,
             rotation=bde.rotation.POS_X,
         ).translate(
-            (
-                0,
-                y_sign * bolt_sep_y / 2,
-                z_sign * bolt_sep_z / 2,
-            ),
+            (0, y_pos, z_pos),
         )
 
     # Remove filament saver hole (which also provides nut access).
@@ -283,6 +274,31 @@ def make_silicone_mold_inner() -> bd.Part:
     return p
 
 
+def make_silicone_mold_inner_half(side: Literal["left", "right"]) -> bd.Part:
+    """Make a half of the inner portion of the silicone mold."""
+
+    p = make_silicone_mold_inner()
+
+    if side == "left":
+        p = p & bd.Box(
+            1000,
+            1000,
+            1000,
+            align=bde.align.FRONT,
+        )
+    elif side == "right":
+        p = p & bd.Box(
+            1000,
+            1000,
+            1000,
+            align=bde.align.BACK,
+        )
+    else:
+        raise ValueError(f"Invalid side: {side}")
+
+    return p
+
+
 def make_mold_assembly() -> bd.Part:
     """Makes an assembly of the silicone mold inner and outer parts."""
 
@@ -299,12 +315,20 @@ def make_mold_assembly() -> bd.Part:
 if __name__ == "__main__":
     validate()
 
+    # zz indicates that it's a demo/preview part only.
+    # Quantity prefix is the nominal quantity of the part to make.
     parts = {
-        "plate_model": (make_plate_model()),
-        "silicone_cast_positive": (make_silicone_cast_positive()),
-        "silicone_mold_outer": (make_silicone_mold_outer()),
-        "silicone_mold_inner": (make_silicone_mold_inner()),
-        "mold_assembly": show(make_mold_assembly()),
+        "zz_plate_model": (make_plate_model()),
+        "zz_silicone_cast_positive": (make_silicone_cast_positive()),
+        "2x_silicone_mold_outer": (make_silicone_mold_outer()),
+        "zz_silicone_mold_inner": (make_silicone_mold_inner()),
+        "1x_silicone_mold_inner_half_left": show(
+            make_silicone_mold_inner_half("left")
+        ),
+        "1x_silicone_mold_inner_half_right": show(
+            make_silicone_mold_inner_half("right")
+        ),
+        "zz_mold_assembly": show(make_mold_assembly()),
     }
 
     logger.info("Showing CAD model(s)")
