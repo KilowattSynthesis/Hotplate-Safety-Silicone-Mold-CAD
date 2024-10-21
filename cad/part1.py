@@ -161,7 +161,7 @@ def make_silicone_cast_positive(
     return p
 
 
-def make_silicone_mold_outer() -> bd.Part:
+def make_silicone_mold_outer(*, with_pour_hole: bool) -> bd.Part:
     """Makes the outer portion of the silicone mold."""
 
     p = bd.Part()
@@ -183,12 +183,13 @@ def make_silicone_mold_outer() -> bd.Part:
     )
 
     # Remove pouring hole (+X face).
-    p -= bd.Cylinder(
-        radius=pouring_hole_diameter / 2,
-        height=1000,
-        rotation=bde.rotation.POS_X,
-        align=bde.align.BOTTOM,  # "Normal" for rotation.
-    )
+    if with_pour_hole:
+        p -= bd.Cylinder(
+            radius=pouring_hole_diameter / 2,
+            height=1000,
+            rotation=bde.rotation.POS_X,
+            align=bde.align.BOTTOM,  # "Normal" for rotation.
+        )
 
     # Remove a big filament saver hole.
     p -= bd.Box(*[dim - 8 for dim in top_filament_saver_box])
@@ -304,7 +305,7 @@ def make_mold_assembly() -> bd.Part:
 
     p = bd.Part()
 
-    p += make_silicone_mold_outer()
+    p += make_silicone_mold_outer(with_pour_hole=False)
 
     # Scale is mostly so we can clearly see the separation.
     p += make_silicone_mold_inner().scale(0.995)
@@ -318,17 +319,22 @@ if __name__ == "__main__":
     # zz indicates that it's a demo/preview part only.
     # Quantity prefix is the nominal quantity of the part to make.
     parts = {
-        "zz_plate_model": (make_plate_model()),
-        "zz_silicone_cast_positive": (make_silicone_cast_positive()),
-        "2x_silicone_mold_outer": (make_silicone_mold_outer()),
-        "zz_silicone_mold_inner": (make_silicone_mold_inner()),
-        "1x_silicone_mold_inner_half_left": show(
+        "1x_silicone_mold_outer_with_hole": show(
+            make_silicone_mold_outer(with_pour_hole=True)
+        ),
+        "1x_silicone_mold_outer_without_hole": show(
+            make_silicone_mold_outer(with_pour_hole=False)
+        ),
+        "1x_silicone_mold_inner_half_left": (
             make_silicone_mold_inner_half("left")
         ),
-        "1x_silicone_mold_inner_half_right": show(
+        "1x_silicone_mold_inner_half_right": (
             make_silicone_mold_inner_half("right")
         ),
-        "zz_mold_assembly": show(make_mold_assembly()),
+        "zz_plate_model": (make_plate_model()),
+        "zz_silicone_cast_positive": (make_silicone_cast_positive()),
+        "zz_silicone_mold_inner": (make_silicone_mold_inner()),
+        "zz_mold_assembly": (make_mold_assembly()),
     }
 
     logger.info("Showing CAD model(s)")
